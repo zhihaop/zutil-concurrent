@@ -68,6 +68,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 - ops: r/w operations per second (offer + poll)
 - queue_size: 32
+- item_size: 20 bytes
 
 #### ArrayBlockingQueue
 
