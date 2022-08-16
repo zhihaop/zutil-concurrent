@@ -8,18 +8,15 @@
 #include <sys/time.h>
 
 void foo(void *arg);
-
 void executorExample();
-
 void arrayBlockingQueueExample();
-
 void linkedBlockingQueueExample();
-
 void blockingQueueExample(BlockingQueue *queue, int queueSize);
 
 int main() {
     executorExample();
     linkedBlockingQueueExample();
+    arrayBlockingQueueExample();
 }
 
 void foo(void *arg) {
