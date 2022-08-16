@@ -69,15 +69,29 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 - ops: r/w operations per second (offer + poll)
 - queue_size: 32
 - item_size: 20 bytes
+-
 
-#### ArrayBlockingQueue
+#### ArrayBlockingQueue (offer_threads=16, poll_threads=16, hyper-threading)
+
+| SPSC      | MPSC      | SPMC     | MPMC      |
+|-----------|-----------|----------|-----------|
+| 25.6 Mops | 32.0 Mops | 4.2 Mops | 14.8 Mops |
+
+#### LinkedBlockingQueue (offer_threads=16, poll_threads=16, hyper-threading)
 
 | SPSC      | MPSC      | SPMC      | MPMC      |
 |-----------|-----------|-----------|-----------|
-| 25.6 Mops | 32.0 Mops | 33.6 Mops | 14.8 Mops |
+| 48.6 Mops | 24.8 Mops | 42.6 Mops | 14.2 Mops |
 
-#### LinkedBlockingQueue
+#### ArrayBlockingQueue (offer_threads=8, poll_threads=8)
+
+| SPSC      | MPSC      | SPMC     | MPMC      |
+|-----------|-----------|----------|-----------|
+| 25.6 Mops | 34.6 Mops | 8.0 Mops | 12.4 Mops |
+
+#### LinkedBlockingQueue (offer_threads=8, poll_threads=8)
 
 | SPSC      | MPSC      | SPMC      | MPMC      |
 |-----------|-----------|-----------|-----------|
-| 48.6 Mops | 24.8 Mops | 50.0 Mops | 14.2 Mops |
+| 48.6 Mops | 29.0 Mops | 32.6 Mops | 24.6 Mops |
+
