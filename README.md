@@ -7,7 +7,7 @@ A collection of Java style concurrent utils implemented in C. Including Blocking
 - BlockingQueue: A Java style Blocking Queue Implementation
     - ArrayBlockingQueue: bounded
     - LinkedBlockingQueue: bounded and unbounded
-- Executor: A Java style Executor Implementation
+- ExecutorService: A Java style Executor Service Implementation
     - FixedThreadPoolExecutor: only supports CallerRunPolicy.
 
 ## Usage
@@ -64,14 +64,19 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 - **MPSC**: Multi Producers Single Consumer
 - **MPMC**: Multi Producers Multi Consumers
 
-### throughput: ArrayBlockingQueue (items per second, queue_size = 32)
+### throughput
 
-| SPSC  | MPSC  | SPMC  | MPMC |
-|-------|-------|-------|------|
-| 12.8M | 16.0M | 16.8M | 7.4M |
+- ops: r/w operations per second (offer + poll)
+- queue_size: 32
 
-### throughput: LinkedBlockingQueue (items per second, queue_size = 32)
+#### ArrayBlockingQueue
 
-| SPSC  | MPSC  | SPMC  | MPMC |
-|-------|-------|-------|------|
-| 24.3M | 12.4M | 25.0M | 7.1M |
+| SPSC      | MPSC      | SPMC      | MPMC      |
+|-----------|-----------|-----------|-----------|
+| 25.6 Mops | 32.0 Mops | 33.6 Mops | 14.8 Mops |
+
+#### LinkedBlockingQueue
+
+| SPSC      | MPSC      | SPMC      | MPMC      |
+|-----------|-----------|-----------|-----------|
+| 48.6 Mops | 24.8 Mops | 50.0 Mops | 14.2 Mops |

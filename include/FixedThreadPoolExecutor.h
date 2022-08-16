@@ -21,7 +21,7 @@ typedef BlockingQueue *(*BlockingQueueBuilder)(size_t, size_t);
  * New a fixed thread pool. The number of thread is fixed in the thread pool. FixedThreadPoolExecutor owns a blocking queue
  * internal in order to handle new Task, taskQueueSize represents the maximum tasks in the queue.
  * 
- * @param threadSize      the number of thread.
+ * @param threadSize        the number of thread.
  * @param taskQueueSize     the number of queue size.
  * @param format            the format of contexts.
  * @param builder           the builder of queue.
