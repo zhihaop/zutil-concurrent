@@ -50,13 +50,9 @@ typedef struct FixedThreadPoolExecutor {
 
 /* member functions */
 static void *executorThread(void *arg);
-
 static void executorFree(FixedThreadPoolExecutor *executor);
-
 static void executorShutdown(FixedThreadPoolExecutor *executor);
-
 static bool executorGetShutdown(FixedThreadPoolExecutor *executor);
-
 static bool executorSubmit(FixedThreadPoolExecutor *executor, void (*fn)(void *), void *arg);
 
 ExecutorService

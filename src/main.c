@@ -8,8 +8,11 @@
 #include <sys/time.h>
 
 void executorExample();
+
 void arrayBlockingQueueExample();
+
 void linkedBlockingQueueExample();
+
 void blockingQueueExample(BlockingQueue *queue, int queueSize);
 
 int main() {
@@ -26,20 +29,23 @@ void foo(void *arg) {
 void executorExample() {
     printf("> executor test\n");
 
-    int corePoolSize = 16;
-    int taskQueueSize = 32;
+    size_t corePoolSize = 16;
+    size_t taskQueueSize = 32;
     int taskCount = 10000000;
-    int finished = 0;
+    int taskFinish = 0;
+    
+    // LinkedBlockingQueue supports unbounded capacity, taskQueueSize == BLOCKING_QUEUE_UNBOUNDED means
+    // blocking queue with unbounded size.
     ExecutorService *pool = newFixedThreadPoolExecutor(corePoolSize, taskQueueSize, "test-%d", newLinkedBlockingQueue);
 
     struct timeval tv0;
     gettimeofday(&tv0, NULL);
 
     for (int i = 0; i < taskCount; ++i) {
-        if (!pool->submit(pool, foo, &finished)) {
+        if (!pool->submit(pool, foo, &taskFinish)) {
             // equivalent to CallerRunPolicy
             if (!pool->isShutdown(pool)) {
-                foo(&finished);
+                foo(&taskFinish);
             }
         }
     }
@@ -51,7 +57,7 @@ void executorExample() {
 
     double diff = (tv1.tv_sec - tv0.tv_sec) * 1000.0 + (tv1.tv_usec - tv0.tv_usec) / 1000.0;
 
-    printf("number of finished tasks = %d, elapsed time = %f ms\n", finished, diff);
+    printf("number of finished tasks = %d, elapsed time = %f ms\n", taskFinish, diff);
 
     pool->free(pool);
 }
@@ -62,6 +68,12 @@ void linkedBlockingQueueExample() {
     BlockingQueue *queue = newLinkedBlockingQueue(queueSize, sizeof(int));
     blockingQueueExample(queue, queueSize);
     queue->free(queue);
+    
+    // ArrayBlockingQueue only support bounded capacity
+    BlockingQueue *null = newArrayBlockingQueue(BLOCKING_QUEUE_UNBOUNDED, sizeof(int));
+    if (null != NULL) {
+        fprintf(stderr, "newArrayBlockingQueue(BLOCKING_QUEUE_UNBOUNDED, sizeof(int)) should return NULL\n");
+    }
 }
 
 void arrayBlockingQueueExample() {

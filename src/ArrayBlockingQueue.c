@@ -33,6 +33,10 @@ inline static void enqueue(ArrayBlockingQueue *queue, void *item);
 inline static void dequeue(ArrayBlockingQueue *queue, void *item);
 
 BlockingQueue *newArrayBlockingQueue(size_t capacity, size_t itemSize) {
+    if (BLOCKING_QUEUE_UNBOUNDED - capacity == 0) {
+        return NULL;
+    }
+    
     ArrayBlockingQueue *queue = calloc(1, sizeof(ArrayBlockingQueue) + capacity * itemSize * sizeof(void *));
     if (queue == NULL) {
         return NULL;

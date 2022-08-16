@@ -10,6 +10,9 @@ extern "C" {
 
 #endif
 
+#define MAXIMUM_SIZE_T (~((size_t) (0)))
+#define BLOCKING_QUEUE_UNBOUNDED MAXIMUM_SIZE_T
+
 typedef struct BlockingQueue {
 
     /**
