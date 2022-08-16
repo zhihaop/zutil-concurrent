@@ -57,21 +57,21 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-### benchmark type
+### scenarios
 
-- spsc: single producer single consumer
-- spmc: single producer multi consumers
-- mpsc: multi producers single consumer
-- mpmc: multi producers multi consumers
+- **SPSC**: Single Producer Single Consumer
+- **SPMC**: Single Producer Multi Consumers
+- **MPSC**: Multi Producers Single Consumer
+- **MPMC**: Multi Producers Multi Consumers
 
 ### throughput: ArrayBlockingQueue (items per second, queue_size = 32)
 
-| spsc  | mpsc  | spmc  | mpmc |
+| SPSC  | MPSC  | SPMC  | MPMC |
 |-------|-------|-------|------|
 | 12.8M | 16.0M | 16.8M | 7.4M |
 
 ### throughput: LinkedBlockingQueue (items per second, queue_size = 32)
 
-| spsc  | mpsc  | spmc  | mpmc |
+| SPSC  | MPSC  | SPMC  | MPMC |
 |-------|-------|-------|------|
 | 24.3M | 12.4M | 25.0M | 7.1M |
