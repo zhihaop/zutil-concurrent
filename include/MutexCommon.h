@@ -116,8 +116,9 @@ inline static void freeMutex(pthread_mutex_t *mutex) {
  * Wait on the conditional variable until the predicate is true.
  * 
  * @param cond      the conditional variable.
- * @param mutex     the mutex.
- * @param timeoutMs the waiting timeout in milliseconds.
+ * @param mutex     the mutex of the conditional variable.
+ * @param timeoutMs the waiting timeout in milliseconds. The timeoutMs == -1 means waiting forever, timeoutMs == 0
+ *                  means never wait.
  * @param predicate the predicate.
  */
 #define waitCondPredicate(cond, mutex, timeoutMs, predicate) do {                       \

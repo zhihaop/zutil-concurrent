@@ -34,7 +34,7 @@ typedef struct BlockingQueue {
      * 
      * @param queue         the blocking queue to queueOffer.
      * @param item          the address of the item to be queueOffer.
-     * @param timeoutMs     the timeout represented in milliseconds. The timeoutMs == -1 means wait
+     * @param timeoutMs     the timeout represented in milliseconds. The timeoutMs == -1 means waiting
      *                      forever. The timeoutMs == 0 means never wait.
      * @return              return true if success.
      */

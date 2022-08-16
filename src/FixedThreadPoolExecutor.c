@@ -4,18 +4,12 @@
 #include <pthread.h>
 #include <malloc.h>
 
-typedef struct FixedThreadPoolExecutor {
-    BlockingQueue *taskQueue;
-
-    size_t poolSize;
-    bool shutdown;
-
-    pthread_t threads[];
-} FixedThreadPoolExecutor;
-
+/**
+ * The state of the task and the executor.
+ */
 enum TaskState {
-    RUNNING,
-    STOP
+    TASK_STATE_RUNNING,
+    TASK_STATE_SHUTDOWN
 };
 
 /**
@@ -29,6 +23,18 @@ typedef struct Task {
     enum TaskState state;
 } Task;
 
+/**
+ * An implementation of FixedThreadPoolExecutor.
+ */
+typedef struct FixedThreadPoolExecutor {
+    BlockingQueue *taskQueue;
+
+    size_t poolSize;
+    enum TaskState state;
+
+    pthread_t threads[];
+} FixedThreadPoolExecutor;
+
 
 static void *start_routine(void *arg) {
     FixedThreadPoolExecutor *pool = arg;
@@ -40,7 +46,7 @@ static void *start_routine(void *arg) {
             continue;
         }
 
-        if (r.state == STOP) {
+        if (r.state == TASK_STATE_SHUTDOWN) {
             return NULL;
         }
         r.fn(r.arg);
@@ -55,14 +61,14 @@ FixedThreadPoolExecutor *newExecutor(size_t corePoolSize, size_t taskQueueSize, 
 
     pool->poolSize = 0;
     pool->taskQueue = builder(taskQueueSize, sizeof(Task));
-    atomic_init(&pool->shutdown, true);
+    atomic_init(&pool->state, TASK_STATE_SHUTDOWN);
 
     if (pool->taskQueue == NULL) {
         executorFree(pool);
         return NULL;
     }
 
-    atomic_store(&pool->shutdown, false);
+    atomic_store(&pool->state, TASK_STATE_RUNNING);
 
     for (int i = 0; i < corePoolSize; ++i) {
         if (pthread_create(&pool->threads[i], NULL, start_routine, pool) != 0) {
@@ -77,10 +83,10 @@ FixedThreadPoolExecutor *newExecutor(size_t corePoolSize, size_t taskQueueSize, 
 }
 
 bool executorSubmit(FixedThreadPoolExecutor *pool, void (*fn)(void *), void *arg) {
-    if (atomic_load(&pool->shutdown)) {
+    if (atomic_load(&pool->state) == TASK_STATE_SHUTDOWN) {
         return false;
     }
-    Task r = {.fn = fn, .arg = arg, .state = RUNNING};
+    Task r = {.fn = fn, .arg = arg, .state = TASK_STATE_RUNNING};
     if (!pool->taskQueue->offer(pool->taskQueue, &r, 0)) {
         fn(arg);
     }
@@ -94,11 +100,10 @@ void executorFree(FixedThreadPoolExecutor *pool) {
 }
 
 void executorShutdown(FixedThreadPoolExecutor *pool) {
-    bool legacy_state;
-    atomic_init(&legacy_state, false);
-    if (atomic_compare_exchange_strong(&pool->shutdown, &legacy_state, true)) {
+    enum TaskState state = TASK_STATE_RUNNING;
+    if (atomic_compare_exchange_strong(&pool->state, &state, TASK_STATE_SHUTDOWN)) {
 
-        Task stop = {.fn = NULL, .arg = NULL, .state = STOP};
+        Task stop = {.fn = NULL, .arg = NULL, .state = TASK_STATE_SHUTDOWN};
         for (int i = 0; i < pool->poolSize; ++i) {
             pool->taskQueue->offer(pool->taskQueue, &stop, -1);
         }

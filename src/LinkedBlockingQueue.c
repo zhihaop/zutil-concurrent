@@ -5,7 +5,7 @@
 #include <string.h>
 
 /**
- * The linked node in Linked BlockingQueue
+ * The linked node in Linked BlockingQueue.
  */
 typedef struct LinkedNode {
     struct LinkedNode *next;
@@ -63,8 +63,7 @@ BlockingQueue *newLinkedBlockingQueue(size_t capacity, size_t itemSize) {
         queueFree(queue);
         return NULL;
     }
-
-
+    
     queue->nonEmpty = newCond();
     queue->nonFull = newCond();
     if (queue->nonFull == NULL || queue->nonEmpty == NULL) {

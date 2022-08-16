@@ -40,14 +40,14 @@ bool executorSubmit(FixedThreadPoolExecutor *pool, void (*fn)(void *), void *arg
 /**
  * Wait all the tasks finished, and state the thread pool.
  * 
- * @param pool the thread pool to state.
+ * @param pool the thread pool.
  */
 void executorShutdown(FixedThreadPoolExecutor *pool);
 
 /**
  * Shutdown the thread pool, and free the thread pool.
  * 
- * @param pool the thread pool to state.
+ * @param pool the thread pool.
  */
 void executorFree(FixedThreadPoolExecutor *pool);
 
