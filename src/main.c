@@ -7,7 +7,6 @@
 
 #include <sys/time.h>
 
-void foo(void *arg);
 void executorExample();
 void arrayBlockingQueueExample();
 void linkedBlockingQueueExample();
@@ -31,16 +30,16 @@ void executorExample() {
     int taskQueueSize = 32;
     int taskCount = 10000000;
     int finished = 0;
-    FixedThreadPoolExecutor *pool = newExecutor(corePoolSize, taskQueueSize, newLinkedBlockingQueue);
+    ExecutorService *pool = newFixedThreadPoolExecutor(corePoolSize, taskQueueSize, "test-%d", newLinkedBlockingQueue);
 
     struct timeval tv0;
     gettimeofday(&tv0, NULL);
 
     for (int i = 0; i < taskCount; ++i) {
-        executorSubmit(pool, foo, &finished);
+        pool->submit(pool, foo, &finished);
     }
 
-    executorShutdown(pool);
+    pool->shutdown(pool);
 
     struct timeval tv1;
     gettimeofday(&tv1, NULL);
@@ -49,7 +48,7 @@ void executorExample() {
 
     printf("number of finished tasks = %d, elapsed time = %f ms\n", finished, diff);
 
-    executorFree(pool);
+    pool->free(pool);
 }
 
 void linkedBlockingQueueExample() {

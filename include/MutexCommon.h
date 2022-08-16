@@ -1,5 +1,5 @@
-#ifndef CONCURRENT_TOOLS_MUTEXCOMMON_H
-#define CONCURRENT_TOOLS_MUTEXCOMMON_H
+#ifndef ZUTIL_CONCURRENT_MUTEXCOMMON_H
+#define ZUTIL_CONCURRENT_MUTEXCOMMON_H
 
 #include <pthread.h>
 #include <malloc.h>
@@ -138,4 +138,4 @@ inline static void freeMutex(pthread_mutex_t *mutex) {
 }
 #endif
 
-#endif //CONCURRENT_TOOLS_MUTEXCOMMON_H
+#endif //ZUTIL_CONCURRENT_MUTEXCOMMON_H

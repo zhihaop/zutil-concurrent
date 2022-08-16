@@ -13,7 +13,7 @@ typedef struct LinkedNode {
 } LinkedNode;
 
 /**
- * A Linked BlockingQueue implementation using two lock taskQueue algorithm.
+ * A Linked BlockingQueue implementation using two lock queue algorithm.
  */
 typedef struct LinkedBlockingQueue {
     BlockingQueue parent;
@@ -127,9 +127,9 @@ static void queueFree(LinkedBlockingQueue *queue) {
 }
 
 /**
- * Put an item from the taskQueue.
+ * Put an item from the queue.
  * 
- * @param queue     the blocking taskQueue.
+ * @param queue     the blocking queue.
  * @param item      the item to be put.
  * @return          the number of item before enqueue.
  */
@@ -142,9 +142,9 @@ inline static int enqueue(LinkedBlockingQueue *queue, void *item) {
 }
 
 /**
- * Take an item from the taskQueue.
+ * Take an item from the queue.
  * 
- * @param queue     the blocking taskQueue.
+ * @param queue     the blocking queue.
  * @param item      the return item.
  * @return          the number of item before dequeue.
  */

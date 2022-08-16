@@ -7,7 +7,8 @@ add_executable(
         ${PROJECT_NAME}
         src/main.c
         src/ArrayBlockingQueue.c 
+        src/LinkedBlockingQueue.c
         src/FixedThreadPoolExecutor.c
-        src/LinkedBlockingQueue.c)
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

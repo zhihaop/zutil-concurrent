@@ -3,14 +3,28 @@
 #include <stdatomic.h>
 #include <pthread.h>
 #include <malloc.h>
+#include <stdio.h>
+#include <string.h>
+
+#define THREAD_NAME_MAX_LENGTH 64
+
+// forward declaration
+struct FixedThreadPoolExecutor;
 
 /**
- * The state of the task and the executor.
+ * The s of the task and the executor.
  */
 enum TaskState {
     TASK_STATE_RUNNING,
     TASK_STATE_SHUTDOWN
 };
+
+typedef struct ThreadContext {
+    struct FixedThreadPoolExecutor *executor;
+    char name[THREAD_NAME_MAX_LENGTH];
+    pthread_t thread;
+    size_t thread_id;
+} ThreadContext;
 
 /**
  * Represents the runnable closure and its context.
@@ -19,7 +33,6 @@ typedef struct Task {
     void (*fn)(void *);
 
     void *arg;
-
     enum TaskState state;
 } Task;
 
@@ -27,19 +40,82 @@ typedef struct Task {
  * An implementation of FixedThreadPoolExecutor.
  */
 typedef struct FixedThreadPoolExecutor {
-    BlockingQueue *taskQueue;
+    ExecutorService parent;
+    BlockingQueue *queue;
+    size_t threadSize;
+    enum TaskState s;
 
-    size_t poolSize;
-    enum TaskState state;
-
-    pthread_t threads[];
+    ThreadContext contexts[];
 } FixedThreadPoolExecutor;
 
+/* member functions */
+static void *executorThread(void *arg);
 
-static void *start_routine(void *arg) {
-    FixedThreadPoolExecutor *pool = arg;
-    BlockingQueue *queue = pool->taskQueue;
+static void executorFree(FixedThreadPoolExecutor *executor);
+
+static void executorShutdown(FixedThreadPoolExecutor *executor);
+
+static bool executorGetShutdown(FixedThreadPoolExecutor *executor);
+
+static bool executorSubmit(FixedThreadPoolExecutor *executor, void (*fn)(void *), void *arg);
+
+ExecutorService
+*newFixedThreadPoolExecutor(size_t threadSize,
+                            size_t taskQueueSize,
+                            const char *format,
+                            BlockingQueueBuilder builder) {
+
+    FixedThreadPoolExecutor *executor = calloc(1, sizeof(FixedThreadPoolExecutor) + sizeof(ThreadContext) * threadSize);
+    if (executor == NULL) {
+        return NULL;
+    }
+
+    // member function binding
+    executor->parent.free = (void (*)(struct ExecutorService *)) executorFree;
+    executor->parent.shutdown = (void (*)(struct ExecutorService *)) executorShutdown;
+    executor->parent.submit = (bool (*)(struct ExecutorService *, void (*)(void *), void *)) executorSubmit;
+    executor->parent.isShutdown = (bool (*)(struct ExecutorService *)) executorGetShutdown;
+
+    executor->threadSize = 0;
+    executor->queue = builder(taskQueueSize, sizeof(Task));
+    atomic_init(&executor->s, TASK_STATE_SHUTDOWN);
+
+    if (executor->queue == NULL) {
+        executorFree(executor);
+        return NULL;
+    }
+
+    atomic_store(&executor->s, TASK_STATE_RUNNING);
+
+    for (int i = 0; i < threadSize; ++i) {
+        ThreadContext *context = &executor->contexts[i];
+
+        context->thread_id = i;
+        context->executor = executor;
+
+        if (strstr(format, "%d") != NULL) {
+            sprintf(context->name, format, context->thread_id);
+        } else {
+            strcpy(context->name, format);
+        }
+
+        if (pthread_create(&context->thread, NULL, executorThread, context) != 0) {
+            executorFree(executor);
+            return NULL;
+        }
+        executor->threadSize += 1;
+    }
+
+    return &executor->parent;
+}
+
+static void *executorThread(void *arg) {
+    ThreadContext *context = arg;
+    FixedThreadPoolExecutor *executor = context->executor;
+    BlockingQueue *queue = executor->queue;
     Task r;
+
+    pthread_setname_np(context->thread, context->name);
 
     for (;;) {
         if (!queue->poll(queue, &r, -1)) {
@@ -53,64 +129,40 @@ static void *start_routine(void *arg) {
     }
 }
 
-FixedThreadPoolExecutor *newExecutor(size_t corePoolSize, size_t taskQueueSize, BlockingQueueBuilder builder) {
-    FixedThreadPoolExecutor *pool = calloc(1, sizeof(FixedThreadPoolExecutor) + sizeof(pthread_t) * corePoolSize);
-    if (pool == NULL) {
-        return NULL;
-    }
-
-    pool->poolSize = 0;
-    pool->taskQueue = builder(taskQueueSize, sizeof(Task));
-    atomic_init(&pool->state, TASK_STATE_SHUTDOWN);
-
-    if (pool->taskQueue == NULL) {
-        executorFree(pool);
-        return NULL;
-    }
-
-    atomic_store(&pool->state, TASK_STATE_RUNNING);
-
-    for (int i = 0; i < corePoolSize; ++i) {
-        if (pthread_create(&pool->threads[i], NULL, start_routine, pool) != 0) {
-            executorShutdown(pool);
-            executorFree(pool);
-            return NULL;
-        }
-        pool->poolSize += 1;
-    }
-
-    return pool;
-}
-
-bool executorSubmit(FixedThreadPoolExecutor *pool, void (*fn)(void *), void *arg) {
-    if (atomic_load(&pool->state) == TASK_STATE_SHUTDOWN) {
+static bool executorSubmit(FixedThreadPoolExecutor *executor, void (*fn)(void *), void *arg) {
+    if (atomic_load(&executor->s) == TASK_STATE_SHUTDOWN) {
         return false;
     }
     Task r = {.fn = fn, .arg = arg, .state = TASK_STATE_RUNNING};
-    if (!pool->taskQueue->offer(pool->taskQueue, &r, 0)) {
+    if (!executor->queue->offer(executor->queue, &r, 0)) {
         fn(arg);
     }
     return true;
 }
 
-void executorFree(FixedThreadPoolExecutor *pool) {
-    executorShutdown(pool);
-    pool->taskQueue->free(pool->taskQueue);
-    free(pool);
+static void executorFree(FixedThreadPoolExecutor *executor) {
+    executorShutdown(executor);
+    executor->queue->free(executor->queue);
+    free(executor);
 }
 
-void executorShutdown(FixedThreadPoolExecutor *pool) {
+static void executorShutdown(FixedThreadPoolExecutor *executor) {
     enum TaskState state = TASK_STATE_RUNNING;
-    if (atomic_compare_exchange_strong(&pool->state, &state, TASK_STATE_SHUTDOWN)) {
+    if (atomic_compare_exchange_strong(&executor->s, &state, TASK_STATE_SHUTDOWN)) {
+        BlockingQueue *queue = executor->queue;
 
         Task stop = {.fn = NULL, .arg = NULL, .state = TASK_STATE_SHUTDOWN};
-        for (int i = 0; i < pool->poolSize; ++i) {
-            pool->taskQueue->offer(pool->taskQueue, &stop, -1);
+        for (int i = 0; i < executor->threadSize; ++i) {
+            queue->offer(queue, &stop, -1);
         }
 
-        for (int i = 0; i < pool->poolSize; ++i) {
-            pthread_join(pool->threads[i], NULL);
+        for (int i = 0; i < executor->threadSize; ++i) {
+            pthread_join(executor->contexts[i].thread, NULL);
         }
     }
+}
+
+static bool executorGetShutdown(FixedThreadPoolExecutor *executor) {
+    return atomic_load(&executor->s) == TASK_STATE_SHUTDOWN;
 }
 

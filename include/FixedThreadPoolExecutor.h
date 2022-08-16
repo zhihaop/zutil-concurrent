@@ -1,6 +1,7 @@
-#ifndef CONCURRENT_TOOLS_THREADPOOL_H
-#define CONCURRENT_TOOLS_THREADPOOL_H
+#ifndef ZUTIL_CONCURRENT_THREADPOOL_H
+#define ZUTIL_CONCURRENT_THREADPOOL_H
 
+#include "ExecutorService.h"
 #include "BlockingQueue.h"
 
 #ifdef __cplusplus
@@ -9,7 +10,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdbool.h>
-    
+
 #endif
 
 typedef struct FixedThreadPoolExecutor FixedThreadPoolExecutor;
@@ -17,41 +18,19 @@ typedef struct FixedThreadPoolExecutor FixedThreadPoolExecutor;
 typedef BlockingQueue *(*BlockingQueueBuilder)(size_t, size_t);
 
 /**
- * New a fixed thread pool. The number of thread is fixed in the thread pool. FixedThreadPoolExecutor owns a blocking taskQueue
- * internal in order to handle new Task, taskQueueSize represents the maximum tasks in the taskQueue.
+ * New a fixed thread pool. The number of thread is fixed in the thread pool. FixedThreadPoolExecutor owns a blocking queue
+ * internal in order to handle new Task, taskQueueSize represents the maximum tasks in the queue.
  * 
- * @param corePoolSize      the number of thread.
- * @param taskQueueSize     the number of taskQueue size.
- * @param builder           the builder of taskQueue.
+ * @param threadSize      the number of thread.
+ * @param taskQueueSize     the number of queue size.
+ * @param format            the format of contexts.
+ * @param builder           the builder of queue.
  * @return                  return NULL if failed.
  */
-FixedThreadPoolExecutor *newExecutor(size_t corePoolSize, size_t taskQueueSize, BlockingQueueBuilder builder);
-
-/**
- * Submit a Task to the thread pool.
- * 
- * @param pool      the thread pool to submit.
- * @param fn        the function to submit.
- * @param arg       the parameter of the function.
- * @return          return false if failed.
- */
-bool executorSubmit(FixedThreadPoolExecutor *pool, void (*fn)(void *), void *arg);
-
-/**
- * Wait all the tasks finished, and state the thread pool.
- * 
- * @param pool the thread pool.
- */
-void executorShutdown(FixedThreadPoolExecutor *pool);
-
-/**
- * Shutdown the thread pool, and free the thread pool.
- * 
- * @param pool the thread pool.
- */
-void executorFree(FixedThreadPoolExecutor *pool);
+ExecutorService *
+newFixedThreadPoolExecutor(size_t threadSize, size_t taskQueueSize, const char *format, BlockingQueueBuilder builder);
 
 #ifdef __cplusplus
 }
 #endif
-#endif //CONCURRENT_TOOLS_THREADPOOL_H
+#endif //ZUTIL_CONCURRENT_THREADPOOL_H

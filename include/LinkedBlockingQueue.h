@@ -1,5 +1,5 @@
-#ifndef CONCURRENT_TOOLS_LINKEDBLOCKINGQUEUE_H
-#define CONCURRENT_TOOLS_LINKEDBLOCKINGQUEUE_H
+#ifndef ZUTIL_CONCURRENT_LINKEDBLOCKINGQUEUE_H
+#define ZUTIL_CONCURRENT_LINKEDBLOCKINGQUEUE_H
 
 #include "BlockingQueue.h"
 
@@ -8,9 +8,9 @@ extern "C" {
 #endif
 
 /**
- * New a linked blocking taskQueue with initial capacity.
+ * New a linked blocking queue with initial capacity.
  * 
- * @param capacity  the initial capacity of the blocking taskQueue.
+ * @param capacity  the initial capacity of the blocking queue.
  * @param itemSize  the size of the item.
  * @return          return NULL if failed.
  */
@@ -20,4 +20,4 @@ BlockingQueue *newLinkedBlockingQueue(size_t capacity, size_t itemSize);
 }
 #endif
 
-#endif //CONCURRENT_TOOLS_LINKEDBLOCKINGQUEUE_H
+#endif //ZUTIL_CONCURRENT_LINKEDBLOCKINGQUEUE_H

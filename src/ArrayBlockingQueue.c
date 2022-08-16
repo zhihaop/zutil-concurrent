@@ -62,9 +62,9 @@ BlockingQueue *newArrayBlockingQueue(size_t capacity, size_t itemSize) {
 }
 
 /**
- * Put an item from the taskQueue.
+ * Put an item from the queue.
  * 
- * @param queue     the blocking taskQueue.
+ * @param queue     the blocking queue.
  * @param item      the item to be put.
  */
 inline static void enqueue(ArrayBlockingQueue *queue, void *item) {
@@ -74,9 +74,9 @@ inline static void enqueue(ArrayBlockingQueue *queue, void *item) {
 }
 
 /**
- * Take an item from the taskQueue.
+ * Take an item from the queue.
  * 
- * @param queue     the blocking taskQueue.
+ * @param queue     the blocking queue.
  * @param item      the return item.
  */
 inline static void dequeue(ArrayBlockingQueue *queue, void *item) {
