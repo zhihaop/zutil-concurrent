@@ -1,14 +1,14 @@
 # zutil-concurrent
 
-A collection of concurrent utils implemented in C.
+A collection of Java style concurrent utils implemented in C. Including BlockingQueue, ThreadPool, etc.
 
 ## Utils
 
 - BlockingQueue: A Java style Blocking Queue Implementation
-    - ArrayBlockingQueue
-    - LinkedBlockingQueue
+    - ArrayBlockingQueue: bounded
+    - LinkedBlockingQueue: bounded and unbounded
 - Executor: A Java style Executor Implementation
-    - FixedThreadPoolExecutor
+    - FixedThreadPoolExecutor: only supports CallerRunPolicy.
 
 ## Usage
 
