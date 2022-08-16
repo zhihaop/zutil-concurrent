@@ -57,6 +57,7 @@ void linkedBlockingQueueExample() {
     int queueSize = 12;
     BlockingQueue *queue = newLinkedBlockingQueue(queueSize, sizeof(int));
     blockingQueueExample(queue, queueSize);
+    queue->free(queue);
 }
 
 void arrayBlockingQueueExample() {
@@ -64,6 +65,7 @@ void arrayBlockingQueueExample() {
     int queueSize = 12;
     BlockingQueue *queue = newArrayBlockingQueue(queueSize, sizeof(int));
     blockingQueueExample(queue, queueSize);
+    queue->free(queue);
 }
 
 void blockingQueueExample(BlockingQueue *queue, int queueSize) {
