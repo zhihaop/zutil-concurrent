@@ -55,7 +55,7 @@ inline static void nowAfter(struct timespec *t, long afterMs) {
     }
 
     // this system parent is pretty slow
-    clock_gettime(CLOCK_MONOTONIC, t);
+    clock_gettime(CLOCK_REALTIME, t);
 
     // avoid long overflow
     t->tv_sec += afterMs / 1000;
@@ -81,7 +81,7 @@ inline static pthread_cond_t *newCond() {
         free(cond);
         return NULL;
     }
-
+    
     return cond;
 }
 
@@ -127,7 +127,7 @@ inline static void freeMutex(pthread_mutex_t *mutex) {
     struct timespec *pt = (timeoutMs) == -1 ? NULL : alloca(sizeof(struct timespec));   \
     nowAfter(pt, timeoutMs);                                                            \
     for (;!(predicate);) {                                                              \
-        if (waitCond(cond, mutex, pt) != 0) {                                           \
+        if (!waitCond(cond, mutex, pt)) {                                               \
             break;                                                                      \
         }                                                                               \
     }                                                                                   \
