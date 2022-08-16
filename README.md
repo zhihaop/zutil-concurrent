@@ -10,11 +10,11 @@ A collection of concurrent utils implemented in C.
 - Executor: A Java style Executor Implementation
     - FixedThreadPoolExecutor
 
-## Performance
-
-## Usage 
+## Usage
 
 See [main.c](src/main.c).
+
+## Performance
 
 ### info
 
