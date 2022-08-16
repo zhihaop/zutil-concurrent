@@ -55,7 +55,7 @@ void executorExample() {
 void linkedBlockingQueueExample() {
     printf("> linked blocking queue test\n");
     int queueSize = 12;
-    BlockingQueue *queue = newLinkedBlockingQueue(12, sizeof(int));
+    BlockingQueue *queue = newLinkedBlockingQueue(queueSize, sizeof(int));
     blockingQueueExample(queue, queueSize);
 }
 
