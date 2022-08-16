@@ -134,10 +134,7 @@ static bool executorSubmit(FixedThreadPoolExecutor *executor, void (*fn)(void *)
         return false;
     }
     Task r = {.fn = fn, .arg = arg, .state = TASK_STATE_RUNNING};
-    if (!executor->queue->offer(executor->queue, &r, 0)) {
-        fn(arg);
-    }
-    return true;
+    return executor->queue->offer(executor->queue, &r, 0);
 }
 
 static void executorFree(FixedThreadPoolExecutor *executor) {

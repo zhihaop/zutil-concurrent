@@ -8,7 +8,7 @@ A collection of Java style concurrent utils implemented in C. Including Blocking
     - ArrayBlockingQueue: bounded
     - LinkedBlockingQueue: bounded and unbounded
 - ExecutorService: A Java style Executor Service Implementation
-    - FixedThreadPoolExecutor: only supports CallerRunPolicy.
+    - FixedThreadPoolExecutor: support shutdown
 
 ## Usage
 

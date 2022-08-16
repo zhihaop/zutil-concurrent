@@ -36,7 +36,12 @@ void executorExample() {
     gettimeofday(&tv0, NULL);
 
     for (int i = 0; i < taskCount; ++i) {
-        pool->submit(pool, foo, &finished);
+        if (!pool->submit(pool, foo, &finished)) {
+            // equivalent to CallerRunPolicy
+            if (!pool->isShutdown(pool)) {
+                foo(&finished);
+            }
+        }
     }
 
     pool->shutdown(pool);
