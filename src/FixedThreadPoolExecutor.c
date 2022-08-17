@@ -113,9 +113,11 @@ static void *executorThread(void *arg) {
     FixedThreadPoolExecutor *executor = context->executor;
     BlockingQueue *queue = executor->queue;
     Task r;
-
-    pthread_setname_np(context->thread, context->name);
-
+    
+#ifdef _GNU_SOURCE
+    pthread_setname_np(pthread_self(), context->name);
+#endif
+    
     for (;;) {
         if (!queue->poll(queue, &r, -1)) {
             continue;

@@ -107,7 +107,7 @@ static void queueFree(LinkedBlockingQueue *queue) {
     }
 
     if (queue->takeLock != NULL) {
-        pthread_mutex_lock(queue->takeLock);
+        lockMutex(queue->takeLock, NULL);
     }
 
     LinkedNode *node = queue->head;
@@ -162,8 +162,9 @@ inline static int dequeue(LinkedBlockingQueue *queue, void *item) {
     return atomic_fetch_add(&queue->count, -1);
 }
 
+
 static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
-    pthread_mutex_lock(queue->takeLock);
+    lockMutex(queue->takeLock, NULL);
 
     waitCondPredicate(queue->nonEmpty, queue->takeLock, timeoutMs, atomic_load(&queue->count) != 0);
 
@@ -180,7 +181,7 @@ static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
     pthread_mutex_unlock(queue->takeLock);
 
     if (before == queue->capacity) {
-        pthread_mutex_lock(queue->putLock);
+        lockMutex(queue->putLock, NULL);
         pthread_cond_signal(queue->nonFull);
         pthread_mutex_unlock(queue->putLock);
     }
@@ -189,8 +190,8 @@ static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
 }
 
 static bool queueOffer(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
-    pthread_mutex_lock(queue->putLock);
-
+    lockMutex(queue->putLock, NULL);
+    
     waitCondPredicate(queue->nonFull, queue->putLock, timeoutMs, atomic_load(&queue->count) != queue->capacity);
 
     if (atomic_load(&queue->count) == queue->capacity) {
@@ -207,7 +208,7 @@ static bool queueOffer(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
     pthread_mutex_unlock(queue->putLock);
 
     if (before == 0) {
-        pthread_mutex_lock(queue->takeLock);
+        lockMutex(queue->takeLock, NULL);
         pthread_cond_signal(queue->nonEmpty);
         pthread_mutex_unlock(queue->takeLock);
     }

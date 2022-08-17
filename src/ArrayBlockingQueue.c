@@ -104,7 +104,7 @@ static void queueFree(ArrayBlockingQueue *queue) {
 
 
 static bool queuePoll(ArrayBlockingQueue *queue, void *item, long timeoutMs) {
-    pthread_mutex_lock(queue->mutex);
+    lockMutex(queue->mutex, NULL);
 
     waitCondPredicate(queue->nonEmpty, queue->mutex, timeoutMs, queue->size != 0);
     
@@ -121,7 +121,7 @@ static bool queuePoll(ArrayBlockingQueue *queue, void *item, long timeoutMs) {
 }
 
 static bool queueOffer(ArrayBlockingQueue *queue, void *item, long timeoutMs) {
-    pthread_mutex_lock(queue->mutex);
+    lockMutex(queue->mutex, NULL);
 
     waitCondPredicate(queue->nonFull, queue->mutex, timeoutMs, queue->size != queue->capacity);
     

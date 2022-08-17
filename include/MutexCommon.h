@@ -1,17 +1,20 @@
 #ifndef ZUTIL_CONCURRENT_MUTEXCOMMON_H
 #define ZUTIL_CONCURRENT_MUTEXCOMMON_H
 
-#include <pthread.h>
+#include <stdio.h>
 #include <malloc.h>
+#include <pthread.h>
 #include <sys/time.h>
 
 #ifdef __cplusplus
 extern "C" {
 #else
+
 #include <stdbool.h>
 #include <stdlib.h>
-#endif
 
+#endif
+    
 /**
  * Create a heap allocate mutex.
  * 
@@ -30,22 +33,6 @@ inline static pthread_mutex_t *newMutex() {
 }
 
 /**
- * Wait on a conditional variable.
- * 
- * @param cond  the conditional variable.
- * @param mutex the mutex to unlock.
- * @param t     the timeout of waiting. t == NULL represents no timeout.
- * @return      return true if the thread is successfully signaled.
- */
-inline static bool waitCond(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *t) {
-    if (t != NULL) {
-        return pthread_cond_timedwait(cond, mutex, t) == 0;
-    } else {
-        return pthread_cond_wait(cond, mutex) == 0;
-    }
-}
-
-/**
  * Get the current time after `afterMs` ms.
  * @param t          the address of struct timespec.
  * @param afterMs    the time represented in milliseconds.
@@ -57,15 +44,91 @@ inline static void nowAfter(struct timespec *t, long afterMs) {
     }
 
     // this system parent is pretty slow
-    clock_gettime(CLOCK_REALTIME, t);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
 
     // avoid long overflow
-    t->tv_sec += afterMs / 1000;
+    tv.tv_sec += afterMs / 1000;
     afterMs = afterMs % 1000;
 
-    t->tv_nsec += afterMs * 1000000;
-    t->tv_sec += t->tv_nsec / 1000000000;
-    t->tv_nsec = t->tv_nsec % 1000000000;
+    tv.tv_usec += afterMs * 1000;
+    tv.tv_sec += tv.tv_usec / 1000000;
+    tv.tv_usec = tv.tv_usec % 1000000;
+
+    t->tv_sec = tv.tv_sec;
+    t->tv_nsec = tv.tv_usec * 1000;
+}
+
+/**
+ * Wait on a conditional variable.
+ * 
+ * @param cond  the conditional variable.
+ * @param mutex the mutex to unlock.
+ * @param t     the timeout of waiting. t == NULL represents no timeout.
+ * @return      return true if the thread is successfully signaled.
+ */
+#ifdef ZUTIL_WAIT_CHECK
+#define waitCond(cond, mutex, t) doWaitCondCheck(cond, mutex, t, __FILE__, __LINE__)
+#else
+#define waitCond(cond, mutex, t) doWaitCond(cond, mutex, t)
+#endif
+inline static bool doWaitCond(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *t) {
+    if (t != NULL) {
+        return pthread_cond_timedwait(cond, mutex, t) == 0;
+    } else {
+        return pthread_cond_wait(cond, mutex) == 0;
+    }
+}
+
+inline static bool doWaitCondCheck(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *t, const char* file, int line) {
+    if (t != NULL) {
+        return pthread_cond_timedwait(cond, mutex, t) == 0;
+    } else {
+        struct timespec ts;
+        nowAfter(&ts, 1000);
+        for (;;) {
+            if (pthread_cond_timedwait(cond, mutex, &ts) == 0) {
+                return true;
+            }
+            fprintf(stderr, "long waiting detected on: %s:%d\n", file, line);
+        }
+    }
+}
+
+
+/**
+ * Lock on a pthread mutex.
+ * 
+ * @param mutex the mutex to lock.
+ * @param t     the timeout of waiting. t == NULL represents no timeout.
+ * @return      return true if the thread is successfully signaled.
+ */
+#ifdef ZUTIL_WAIT_CHECK
+#define lockMutex(mutex, t) doLockMutexCheck(mutex, t, __FILE__, __LINE__)
+#else
+#define lockMutex(mutex, t) doLockMutex(mutex, t)
+#endif
+inline static bool doLockMutex(pthread_mutex_t *mutex, struct timespec *t) {
+    if (t != NULL) {
+        return pthread_mutex_timedlock(mutex, t) == 0;
+    } else {
+        return pthread_mutex_lock(mutex) == 0;
+    }
+}
+
+inline static bool doLockMutexCheck(pthread_mutex_t *mutex, struct timespec *t, const char* file, int line) {
+    if (t != NULL) {
+        return pthread_mutex_timedlock(mutex, t) == 0;
+    } else {
+        struct timespec ts;
+        nowAfter(&ts, 1000);
+        for (;;) {
+            if (pthread_mutex_timedlock(mutex, &ts) == 0) {
+                return true;
+            }
+            fprintf(stderr, "long waiting detected on %s:%d\n", file, line);
+        }
+    }
 }
 
 /**
@@ -83,7 +146,7 @@ inline static pthread_cond_t *newCond() {
         free(cond);
         return NULL;
     }
-    
+
     return cond;
 }
 
