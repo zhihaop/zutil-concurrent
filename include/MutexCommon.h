@@ -43,8 +43,10 @@ inline static void nowAfter(struct timespec *t, long afterMs) {
         return;
     }
 
-    // this system parent is pretty slow
+    // this system call is pretty slow
     struct timeval tv;
+    
+    // using gettimeofday instead of clock_gettime because it is faster
     gettimeofday(&tv, NULL);
 
     // avoid long overflow
