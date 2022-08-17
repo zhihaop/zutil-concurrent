@@ -67,11 +67,14 @@ ExecutorService
     }
 
     // member function binding
-    executor->parent.free = (void (*)(struct ExecutorService *)) executorFree;
-    executor->parent.shutdown = (void (*)(struct ExecutorService *)) executorShutdown;
-    executor->parent.submit = (bool (*)(struct ExecutorService *, void (*)(void *), void *)) executorSubmit;
-    executor->parent.isShutdown = (bool (*)(struct ExecutorService *)) executorGetShutdown;
-
+    ExecutorService parent = {
+            .free = (void (*)(struct ExecutorService *)) executorFree,
+            .shutdown = (void (*)(struct ExecutorService *)) executorShutdown,
+            .submit = (bool (*)(struct ExecutorService *, void (*)(void *), void *)) executorSubmit,
+            .isShutdown = (bool (*)(struct ExecutorService *)) executorGetShutdown
+    };
+    memcpy(&executor->parent, &parent, sizeof(ExecutorService));
+    
     executor->threadSize = 0;
     executor->queue = builder(taskQueueSize, sizeof(Task));
     atomic_init(&executor->s, TASK_STATE_SHUTDOWN);

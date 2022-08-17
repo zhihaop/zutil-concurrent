@@ -43,9 +43,12 @@ BlockingQueue *newArrayBlockingQueue(size_t capacity, size_t itemSize) {
     }
 
     // member function binding
-    queue->parent.offer = (bool (*)(struct BlockingQueue *, void *, long)) queueOffer;
-    queue->parent.free = (void (*)(struct BlockingQueue *)) queueFree;
-    queue->parent.poll = (bool (*)(struct BlockingQueue *, void *, long)) queuePoll;
+    BlockingQueue parent = {
+            .offer = (bool (*)(struct BlockingQueue *, void *, long)) queueOffer,
+            .free = (void (*)(struct BlockingQueue *)) queueFree,
+            .poll = (bool (*)(struct BlockingQueue *, void *, long)) queuePoll
+    };
+    memcpy(&queue->parent, &parent, sizeof(BlockingQueue));
 
     queue->head = 0;
     queue->tail = 0;

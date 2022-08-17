@@ -18,21 +18,21 @@ typedef struct ExecutorService {
      * @param arg           the parameter of the function.
      * @return              return false if failed.
      */
-    bool (*submit)(struct ExecutorService *executor, void (*fn)(void *), void *arg);
+    bool (*const submit)(struct ExecutorService *executor, void (*fn)(void *), void *arg);
 
     /**
      * Wait all the tasks finished, and shutdown the executor service.
      * 
      * @param executor      the executor service.
      */
-    void (*shutdown)(struct ExecutorService *executor);
+    void (*const shutdown)(struct ExecutorService *executor);
 
     /**
      * Shutdown and free the executor service.
      * 
      * @param executor      the executor service.
      */
-    void (*free)(struct ExecutorService *executor);
+    void (*const free)(struct ExecutorService *executor);
 
     /**
      * Check if the executor service is shutdown.
@@ -40,7 +40,7 @@ typedef struct ExecutorService {
      * @param executor      the executor service.
      * @return              return true if the the executor service is shutdown.
      */
-    bool (*isShutdown)(struct ExecutorService *executor);
+    bool (*const isShutdown)(struct ExecutorService *executor);
 } ExecutorService;
 
 

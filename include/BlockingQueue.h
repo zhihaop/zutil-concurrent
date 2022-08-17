@@ -20,7 +20,7 @@ typedef struct BlockingQueue {
      * 
      * @param queue        the blocking queue to free.
      */
-    void (*free)(struct BlockingQueue *queue);
+    void (*const free)(struct BlockingQueue *queue);
 
     /**
      * Poll an item from the blocking queue. If the queue is empty, the function will be blocked until the queue is not empty or reaches its timeout.
@@ -30,7 +30,7 @@ typedef struct BlockingQueue {
      * @param item          the writer buffer.
      * @return              return false if failed.
      */
-    bool (*poll)(struct BlockingQueue *queue, void *item, long timeoutMs);
+    bool (*const poll)(struct BlockingQueue *queue, void *item, long timeoutMs);
 
     /**
      * Offer an item to the blocking queue. If the queue is full, the function will be blocked until the queue is not full or reaches its timeout.
@@ -41,7 +41,7 @@ typedef struct BlockingQueue {
      *                      forever. The timeoutMs == 0 means never wait.
      * @return              return true if success.
      */
-    bool (*offer)(struct BlockingQueue *queue, void *item, long timeoutMs);
+    bool (*const offer)(struct BlockingQueue *queue, void *item, long timeoutMs);
 } BlockingQueue;
 
 #ifdef __cplusplus
