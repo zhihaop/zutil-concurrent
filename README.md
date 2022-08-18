@@ -75,8 +75,8 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ### throughput
 
 - ops: r/w operations per second (offer + poll)
-- queue_size: 32
-- item_size: 20 bytes
+- queue_size: 1024
+- item_size: 8 bytes
 
 #### ArrayBlockingQueue (offer_threads=16, poll_threads=16, hyper-threading)
 
