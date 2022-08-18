@@ -1,9 +1,10 @@
 # zutil-concurrent
 
-A collection of Java style concurrent utils implemented in C. Including BlockingQueue, ThreadPool, etc.
+A collection of Java style concurrent utils implemented in C. Including BlockingQueue, ThreadPool, CountDownLatch, ThreadLocal, etc.
 
 ## Utils
 
+- [ThreadLocal](include/ThreadLocal.h)
 - Synchronizer
     - [ReentrantLock](include/ReentrantLock.h)
     - [Condition](include/Condition.h)

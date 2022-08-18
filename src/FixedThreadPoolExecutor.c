@@ -12,7 +12,7 @@
 struct FixedThreadPoolExecutor;
 
 /**
- * The s of the task and the executor.
+ * The state of the task and the executor.
  */
 enum TaskState {
     TASK_STATE_RUNNING,
@@ -31,7 +31,6 @@ typedef struct ThreadContext {
  */
 typedef struct Task {
     void (*fn)(void *);
-
     void *arg;
     enum TaskState state;
 } Task;

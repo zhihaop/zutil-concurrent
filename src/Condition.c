@@ -165,7 +165,7 @@ long awaitCondition(Condition *condition, long timeoutMs) {
     if (waitNode == NULL) {
         return 0;
     }
-
+    
     retainConditionNode(waitNode);
 
     struct ConditionNode *prevNode = condition->waitTail;
