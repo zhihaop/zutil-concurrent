@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(
         ${PROJECT_NAME}
-        src/main.c
+        test/main.c
         src/ArrayBlockingQueue.c 
         src/LinkedBlockingQueue.c
         src/FixedThreadPoolExecutor.c

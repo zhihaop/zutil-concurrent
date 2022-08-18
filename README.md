@@ -7,6 +7,7 @@ A collection of Java style concurrent utils implemented in C. Including Blocking
 - Synchronizer
     - [ReentrantLock](include/ReentrantLock.h)
     - [Condition](include/Condition.h)
+    - [CountDownLatch](include/CountDownLatch.h)
 - [BlockingQueue](include/BlockingQueue.h)
     - [ArrayBlockingQueue](include/ArrayBlockingQueue.h): bounded
     - [LinkedBlockingQueue](include/LinkedBlockingQueue.h): bounded and unbounded
@@ -15,9 +16,13 @@ A collection of Java style concurrent utils implemented in C. Including Blocking
 
 ## Usage
 
-See [main.c](src/main.c).
+See [main.c](test/main.c).
 
 ## Performance
+
+### source code
+
+See [benchmarkQueue.c](test/benchmarkQueue.c)
 
 ### info
 
