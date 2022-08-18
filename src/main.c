@@ -13,9 +13,9 @@ void linkedBlockingQueueExample();
 void blockingQueueExample(BlockingQueue *queue, int queueSize);
 
 int main() {
-    executorExample();
-    linkedBlockingQueueExample();
+    executorExample(); 
     arrayBlockingQueueExample();
+    linkedBlockingQueueExample();
 }
 
 void foo(void *arg) {
@@ -30,11 +30,11 @@ void executorExample() {
     size_t taskQueueSize = 32;
     int taskCount = 10000000;
     int taskFinish = 0;
-    
+
     // LinkedBlockingQueue supports unbounded capacity, taskQueueSize == BLOCKING_QUEUE_UNBOUNDED means
     // blocking queue with unbounded size.
     ExecutorService *pool = newFixedThreadPoolExecutor(corePoolSize, taskQueueSize, "test-%d", newLinkedBlockingQueue);
-
+    
     struct timeval tv0;
     gettimeofday(&tv0, NULL);
 
@@ -65,7 +65,7 @@ void linkedBlockingQueueExample() {
     BlockingQueue *queue = newLinkedBlockingQueue(queueSize, sizeof(int));
     blockingQueueExample(queue, queueSize);
     queue->free(queue);
-    
+
     // ArrayBlockingQueue only support bounded capacity
     BlockingQueue *null = newArrayBlockingQueue(BLOCKING_QUEUE_UNBOUNDED, sizeof(int));
     if (null != NULL) {
@@ -89,7 +89,7 @@ void blockingQueueExample(BlockingQueue *queue, int queueSize) {
     }
 
     // test offer timeout
-    int num = queueSize;
+    int num = -1;
     if (!queue->offer(queue, &num, 1000)) {
         printf("timeout (1000 ms): queue->offer(%d)\n", num);
     }

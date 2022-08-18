@@ -140,7 +140,9 @@ static bool executorSubmit(FixedThreadPoolExecutor *executor, void (*fn)(void *)
 
 static void executorFree(FixedThreadPoolExecutor *executor) {
     executorShutdown(executor);
-    executor->queue->free(executor->queue);
+    if (executor->queue) {
+        executor->queue->free(executor->queue);
+    }
     free(executor);
 }
 

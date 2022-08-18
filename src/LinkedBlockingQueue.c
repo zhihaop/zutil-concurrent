@@ -1,8 +1,10 @@
 #include "LinkedBlockingQueue.h"
-#include "MutexCommon.h"
 
 #include <stdatomic.h>
 #include <string.h>
+
+#include "ReentrantLock.h"
+#include "Condition.h"
 
 /**
  * The linked node in Linked BlockingQueue.
@@ -18,10 +20,10 @@ typedef struct LinkedNode {
 typedef struct LinkedBlockingQueue {
     BlockingQueue parent;
 
-    pthread_mutex_t *putLock;
-    pthread_mutex_t *takeLock;
-    pthread_cond_t *nonFull;
-    pthread_cond_t *nonEmpty;
+    ReentrantLock *putLock;
+    ReentrantLock *takeLock;
+    Condition *nonFull;
+    Condition *nonEmpty;
 
     size_t capacity;
     size_t count;
@@ -33,12 +35,16 @@ typedef struct LinkedBlockingQueue {
 
 /* member functions */
 static void queueFree(LinkedBlockingQueue *queue);
+
 static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs);
+
 static bool queueOffer(LinkedBlockingQueue *queue, void *item, long timeoutMs);
 
 /* private member functions */
 inline static LinkedNode *newNode(void *item, size_t itemSize);
+
 inline static int enqueue(LinkedBlockingQueue *queue, void *item);
+
 inline static int dequeue(LinkedBlockingQueue *queue, void *item);
 
 
@@ -60,15 +66,15 @@ BlockingQueue *newLinkedBlockingQueue(size_t capacity, size_t itemSize) {
     queue->capacity = capacity;
     atomic_init(&queue->count, 0);
 
-    queue->putLock = newMutex();
-    queue->takeLock = newMutex();
+    queue->putLock = newReentrantLock();
+    queue->takeLock = newReentrantLock();
     if (queue->putLock == NULL || queue->takeLock == NULL) {
         queueFree(queue);
         return NULL;
     }
-    
-    queue->nonEmpty = newCond();
-    queue->nonFull = newCond();
+
+    queue->nonEmpty = newCondition(queue->takeLock);
+    queue->nonFull = newCondition(queue->putLock);
     if (queue->nonFull == NULL || queue->nonEmpty == NULL) {
         queueFree(queue);
         return NULL;
@@ -102,12 +108,8 @@ inline static LinkedNode *newNode(void *item, size_t itemSize) {
 }
 
 static void queueFree(LinkedBlockingQueue *queue) {
-    if (queue == NULL) {
-        return;
-    }
-
-    if (queue->takeLock != NULL) {
-        lockMutex(queue->takeLock, NULL);
+    if (queue->takeLock) {
+        lockReentrantLock(queue->takeLock);
     }
 
     LinkedNode *node = queue->head;
@@ -117,14 +119,21 @@ static void queueFree(LinkedBlockingQueue *queue) {
         node = next;
     }
 
-    if (queue->takeLock != NULL) {
-        pthread_mutex_unlock(queue->takeLock);
+    if (queue->takeLock) {
+        unlockReentrantLock(queue->takeLock);
     }
-
-    freeCond(queue->nonEmpty);
-    freeCond(queue->nonFull);
-    freeMutex(queue->takeLock);
-    freeMutex(queue->putLock);
+    if (queue->nonEmpty) {
+        freeCondition(queue->nonEmpty);
+    }
+    if (queue->nonFull) {
+        freeCondition(queue->nonFull);
+    }
+    if (queue->takeLock) {
+        freeReentrantLock(queue->takeLock);
+    }
+    if (queue->putLock) {
+        freeReentrantLock(queue->putLock);
+    }
     free(queue);
 
 }
@@ -164,55 +173,54 @@ inline static int dequeue(LinkedBlockingQueue *queue, void *item) {
 
 
 static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
-    lockMutex(queue->takeLock, NULL);
+    lockReentrantLock(queue->takeLock);
 
-    waitCondPredicate(queue->nonEmpty, queue->takeLock, timeoutMs, atomic_load(&queue->count) != 0);
-
-    if (atomic_load(&queue->count) == 0) {
-        pthread_mutex_unlock(queue->takeLock);
-        return false;
+    while (atomic_load(&queue->count) == 0) {
+        if (!waitCondition(queue->nonEmpty, timeoutMs)) {
+            unlockReentrantLock(queue->takeLock);
+            return false;
+        }
     }
 
     int before = dequeue(queue, item);
     if (before > 1) {
-        pthread_cond_signal(queue->nonEmpty);
+        signalCondition(queue->nonEmpty);
     }
 
-    pthread_mutex_unlock(queue->takeLock);
+    unlockReentrantLock(queue->takeLock);
 
     if (before == queue->capacity) {
-        lockMutex(queue->putLock, NULL);
-        pthread_cond_signal(queue->nonFull);
-        pthread_mutex_unlock(queue->putLock);
+        lockReentrantLock(queue->putLock);
+        signalCondition(queue->nonFull);
+        unlockReentrantLock(queue->putLock);
     }
-
     return true;
 }
 
 static bool queueOffer(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
-    lockMutex(queue->putLock, NULL);
-    
-    waitCondPredicate(queue->nonFull, queue->putLock, timeoutMs, atomic_load(&queue->count) != queue->capacity);
+    lockReentrantLock(queue->putLock);
 
-    if (atomic_load(&queue->count) == queue->capacity) {
-        pthread_mutex_unlock(queue->putLock);
-        return false;
+    while (atomic_load(&queue->count) == queue->capacity) {
+        if (!waitCondition(queue->nonFull, timeoutMs)) {
+            unlockReentrantLock(queue->putLock);
+            return false;
+        }
     }
+
 
     int before = enqueue(queue, item);
-
+    
     if (before + 1 < queue->capacity) {
-        pthread_cond_signal(queue->nonFull);
+        signalCondition(queue->nonFull);
     }
 
-    pthread_mutex_unlock(queue->putLock);
+    unlockReentrantLock(queue->putLock);
 
     if (before == 0) {
-        lockMutex(queue->takeLock, NULL);
-        pthread_cond_signal(queue->nonEmpty);
-        pthread_mutex_unlock(queue->takeLock);
+        lockReentrantLock(queue->takeLock);
+        signalCondition(queue->nonEmpty);
+        unlockReentrantLock(queue->takeLock);
     }
-
     return true;
 }
 

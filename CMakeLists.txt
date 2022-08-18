@@ -9,6 +9,7 @@ add_executable(
         src/ArrayBlockingQueue.c 
         src/LinkedBlockingQueue.c
         src/FixedThreadPoolExecutor.c
-)
+        src/ReentrantLock.c 
+        src/Condition.c)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
