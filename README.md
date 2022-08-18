@@ -3,9 +3,10 @@
 A collection of Java style concurrent utils implemented in C. Including BlockingQueue, ThreadPool, etc.
 
 ## Utils
+
 - Synchronizer
-  - [ReentrantLock](include/ReentrantLock.h)
-  - [Condition](include/Condition.h)
+    - [ReentrantLock](include/ReentrantLock.h)
+    - [Condition](include/Condition.h)
 - [BlockingQueue](include/BlockingQueue.h)
     - [ArrayBlockingQueue](include/ArrayBlockingQueue.h): bounded
     - [LinkedBlockingQueue](include/LinkedBlockingQueue.h): bounded and unbounded
@@ -74,25 +75,25 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 #### ArrayBlockingQueue (offer_threads=16, poll_threads=16, hyper-threading)
 
-| SPSC      | MPSC      | SPMC     | MPMC      |
-|-----------|-----------|----------|-----------|
-| 25.6 Mops | 32.0 Mops | 4.2 Mops | 14.8 Mops |
+| SPSC      | MPSC     | SPMC     | MPMC     |
+|-----------|----------|----------|----------|
+| 11.3 Mops | 3.8 Mops | 3.9 Mops | 5.5 Mops |
 
 #### LinkedBlockingQueue (offer_threads=16, poll_threads=16, hyper-threading)
 
-| SPSC      | MPSC      | SPMC      | MPMC      |
-|-----------|-----------|-----------|-----------|
-| 48.6 Mops | 24.8 Mops | 42.6 Mops | 14.2 Mops |
+| SPSC      | MPSC     | SPMC     | MPMC     |
+|-----------|----------|----------|----------|
+| 16.0 Mops | 6.4 Mops | 6.1 Mops | 4.6 Mops |
 
 #### ArrayBlockingQueue (offer_threads=8, poll_threads=8)
 
-| SPSC      | MPSC      | SPMC     | MPMC      |
-|-----------|-----------|----------|-----------|
-| 25.6 Mops | 34.6 Mops | 8.0 Mops | 12.4 Mops |
+| SPSC      | MPSC     | SPMC     | MPMC     |
+|-----------|----------|----------|----------|
+| 10.9 Mops | 5.8 Mops | 6.5 Mops | 5.6 Mops |
 
 #### LinkedBlockingQueue (offer_threads=8, poll_threads=8)
 
-| SPSC      | MPSC      | SPMC      | MPMC      |
-|-----------|-----------|-----------|-----------|
-| 48.6 Mops | 29.0 Mops | 32.6 Mops | 24.6 Mops |
+| SPSC      | MPSC     | SPMC      | MPMC     |
+|-----------|----------|-----------|----------|
+| 18.6 Mops | 8.9 Mops | 10.4 Mops | 8.0 Mops |
 

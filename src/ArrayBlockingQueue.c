@@ -117,7 +117,9 @@ static bool queuePoll(ArrayBlockingQueue *queue, void *item, long timeoutMs) {
     lockReentrantLock(queue->lock);
 
     while (queue->size == 0) {
-        if (!waitCondition(queue->nonEmpty, timeoutMs)) {
+        timeoutMs = awaitCondition(queue->nonEmpty, timeoutMs);
+        
+        if (timeoutMs == 0) {
             unlockReentrantLock(queue->lock);
             return false;
         }
@@ -133,7 +135,9 @@ static bool queueOffer(ArrayBlockingQueue *queue, void *item, long timeoutMs) {
     lockReentrantLock(queue->lock);
 
     while (queue->size == queue->capacity) {
-        if (!waitCondition(queue->nonFull, timeoutMs)) {
+        timeoutMs = awaitCondition(queue->nonFull, timeoutMs);
+        
+        if (timeoutMs == 0) {
             unlockReentrantLock(queue->lock);
             return false;
         }

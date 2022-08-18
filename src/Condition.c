@@ -1,6 +1,7 @@
 #include "Condition.h"
 
 #include <stdatomic.h>
+#include <alloca.h>
 
 enum ConditionNodeState {
     WAITING,
@@ -11,7 +12,7 @@ enum ConditionNodeState {
 struct ConditionNode {
     struct ConditionNode *next;
     pthread_cond_t condition;
-    
+
     int count;
     int state;
 };
@@ -23,32 +24,19 @@ struct Condition {
 };
 
 /**
-* Get the current time after `afterMs` ms.
+* Get the time after `afterMs` ms.
 * @param t          the address of struct timespec.
 * @param afterMs    the time represented in milliseconds.
 * @return           
 */
-inline static void nowAfter(struct timespec *t, long afterMs) {
-    if (t == NULL) {
-        return;
-    }
-
-    // this system call is pretty slow
-    struct timeval tv;
-
-    // using gettimeofday instead of clock_gettime because it is faster
-    gettimeofday(&tv, NULL);
-
+inline static void timeAfter(struct timespec *t, long afterMs) {
     // avoid long overflow
-    tv.tv_sec += afterMs / 1000;
+    t->tv_sec += afterMs / 1000;
     afterMs = afterMs % 1000;
 
-    tv.tv_usec += afterMs * 1000;
-    tv.tv_sec += tv.tv_usec / 1000000;
-    tv.tv_usec = tv.tv_usec % 1000000;
-
-    t->tv_sec = tv.tv_sec;
-    t->tv_nsec = tv.tv_usec * 1000;
+    t->tv_nsec += afterMs * 1000000;
+    t->tv_sec += t->tv_nsec / 1000000000;
+    t->tv_nsec = t->tv_nsec % 1000000000;
 }
 
 /**
@@ -58,11 +46,11 @@ inline static void nowAfter(struct timespec *t, long afterMs) {
  */
 inline static struct ConditionNode *newConditionNode() {
     struct ConditionNode *node = calloc(1, sizeof(struct ConditionNode));
-    
+
     node->next = NULL;
     atomic_store(&node->count, 0);
     atomic_store(&node->state, WAITING);
-    
+
     if (pthread_cond_init(&node->condition, NULL)) {
         free(node);
         return NULL;
@@ -80,11 +68,11 @@ inline static void retainConditionNode(struct ConditionNode *node) {
 }
 
 /**
- * Remove the condition node in queue.
+ * Remove the condition node form queue.
  * 
  * @param node the condition node.
  */
-inline static void removeConditionNode(struct ConditionNode* head, struct ConditionNode *node) {
+inline static void removeFromQueueConditionNode(struct ConditionNode *head, struct ConditionNode *node) {
     while (head) {
         if (head->next == node) {
             head->next = node->next;
@@ -116,7 +104,7 @@ Condition *newCondition(ReentrantLock *lock) {
     if (condition == NULL) {
         return NULL;
     }
-    
+
     condition->lock = lock;
     condition->waitHead = newConditionNode();
     condition->waitTail = condition->waitHead;
@@ -156,46 +144,66 @@ void signalCondition(Condition *condition) {
     }
 }
 
-bool waitCondition(Condition *condition, long timeoutMs) {
-    struct timespec t;
-    struct timespec *pt = NULL;
+long awaitCondition(Condition *condition, long timeoutMs) {
+    struct timespec *current = NULL;
+    struct timespec *timeout = NULL;
     if (timeoutMs == 0) {
-        return false;
-    } else if (timeoutMs != -1) {
-        pt = &t;
-        nowAfter(pt, timeoutMs);
+        return 0;
+    }
+    
+    if (timeoutMs != -1) {
+        current = alloca(sizeof(struct timespec));
+        timeout = alloca(sizeof(struct timespec));
+        clock_gettime(CLOCK_REALTIME, current);
+
+        timeout->tv_sec = current->tv_sec;
+        timeout->tv_nsec = current->tv_nsec;
+        timeAfter(timeout, timeoutMs);
     }
 
     struct ConditionNode *waitNode = newConditionNode();
     if (waitNode == NULL) {
-        return false;
+        return 0;
     }
+
     retainConditionNode(waitNode);
 
     struct ConditionNode *prevNode = condition->waitTail;
     condition->waitTail = waitNode;
     prevNode->next = waitNode;
 
-    int ret = 0;
     pthread_cond_t *cond = &waitNode->condition;
     pthread_mutex_t *mutex = nativeHandleReentrantLock(condition->lock);
 
     while (waitNode->state == WAITING) {
-        if (pt != NULL) {
-            ret = pthread_cond_timedwait(cond, mutex, pt);
+        int state;
+        if (timeout != NULL) {
+            state = pthread_cond_timedwait(cond, mutex, timeout);
         } else {
-            ret = pthread_cond_wait(cond, mutex);
+            state = pthread_cond_wait(cond, mutex);
         }
         // condition await timeout
-        if (ret != 0) {
-            removeConditionNode(condition->waitHead, waitNode);
+        if (state != 0) {
+            removeFromQueueConditionNode(condition->waitHead, waitNode);
             break;
         }
     }
 
     waitNode->state = INVALID;
     releaseConditionNode(waitNode);
-    return ret == 0;
+
+    if (timeoutMs == -1) {
+        return -1;
+    } 
+    
+    struct timespec latest;
+    clock_gettime(CLOCK_REALTIME, &latest);
+
+    long duration = (latest.tv_sec - current->tv_sec) * 1000;
+    duration += (latest.tv_nsec - current->tv_nsec) / 1000000;
+    
+    long leave = timeoutMs - duration;
+    return leave < 0 ? 0 : leave;
 }
 
 void freeCondition(Condition *condition) {

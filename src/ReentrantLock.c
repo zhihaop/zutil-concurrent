@@ -4,6 +4,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#define REENTRANT_TRY_LOCK_SPIN 16
+
 struct ReentrantLock {
     pthread_mutexattr_t attr;
     pthread_mutex_t mutex;
@@ -42,9 +44,18 @@ void unlockReentrantLock(ReentrantLock *lock) {
 }
 
 void lockReentrantLock(ReentrantLock *lock) {
+    for (int spin = 0; spin < REENTRANT_TRY_LOCK_SPIN; ++spin) {
+        if (tryLockReentrantLock(lock)) {
+            return;
+        }
+    }
     pthread_mutex_lock(&lock->mutex);
 }
 
 pthread_mutex_t *nativeHandleReentrantLock(ReentrantLock *lock) {
     return &lock->mutex;
+}
+
+bool tryLockReentrantLock(ReentrantLock *lock) {
+    return pthread_mutex_trylock(&lock->mutex) == 0;
 }

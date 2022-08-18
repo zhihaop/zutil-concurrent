@@ -10,12 +10,16 @@
 void executorExample();
 void arrayBlockingQueueExample();
 void linkedBlockingQueueExample();
+void benchmarkArrayBlockingQueue();
+void benchmarkLinkedBlockingQueue();
 void blockingQueueExample(BlockingQueue *queue, int queueSize);
 
 int main() {
-    executorExample(); 
-    arrayBlockingQueueExample();
-    linkedBlockingQueueExample();
+//    executorExample(); 
+//    arrayBlockingQueueExample();
+//    linkedBlockingQueueExample();
+    benchmarkArrayBlockingQueue();
+    benchmarkLinkedBlockingQueue();
 }
 
 void foo(void *arg) {
@@ -27,7 +31,7 @@ void executorExample() {
     printf("> executor test\n");
 
     size_t corePoolSize = 16;
-    size_t taskQueueSize = 32;
+    size_t taskQueueSize = 128;
     int taskCount = 10000000;
     int taskFinish = 0;
 

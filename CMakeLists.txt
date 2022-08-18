@@ -10,6 +10,8 @@ add_executable(
         src/LinkedBlockingQueue.c
         src/FixedThreadPoolExecutor.c
         src/ReentrantLock.c 
-        src/Condition.c)
+        src/Condition.c
+        src/CountDownLatch.c
+        test/benchmarkQueue.c)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

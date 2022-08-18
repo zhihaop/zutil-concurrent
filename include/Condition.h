@@ -46,10 +46,10 @@ void signalAllCondition(Condition *condition);
  * Wait on the condition variable.
  * @param condition the condition variable.
  * @param timeoutMs the waiting timeout (milliseconds). timeoutMs == -1 means waiting 
- *                  forever, timeoutMs == 0 means never wait (always returns false).
- * @return return false if timeout.
+ *                  forever (always returns -1), timeoutMs == 0 means never wait (always returns 0).
+ * @return          the leave time (milliseconds).
  */
-bool waitCondition(Condition *condition, long timeoutMs);
+long awaitCondition(Condition *condition, long timeoutMs);
 
 #ifdef __cplusplus
 }

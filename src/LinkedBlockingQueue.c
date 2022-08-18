@@ -35,16 +35,12 @@ typedef struct LinkedBlockingQueue {
 
 /* member functions */
 static void queueFree(LinkedBlockingQueue *queue);
-
 static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs);
-
 static bool queueOffer(LinkedBlockingQueue *queue, void *item, long timeoutMs);
 
 /* private member functions */
 inline static LinkedNode *newNode(void *item, size_t itemSize);
-
 inline static int enqueue(LinkedBlockingQueue *queue, void *item);
-
 inline static int dequeue(LinkedBlockingQueue *queue, void *item);
 
 
@@ -161,35 +157,40 @@ inline static int enqueue(LinkedBlockingQueue *queue, void *item) {
  * @return          the number of item before dequeue.
  */
 inline static int dequeue(LinkedBlockingQueue *queue, void *item) {
-    LinkedNode *first = queue->head->next;
-    LinkedNode *legacy = queue->head;
+    LinkedNode *h = queue->head;
+    LinkedNode *first = h->next;
+    
     queue->head = first;
-
     memcpy(item, first->data, queue->itemSize);
-    free(legacy);
-
+    free(h);
+ 
     return atomic_fetch_add(&queue->count, -1);
 }
 
 
 static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
-    lockReentrantLock(queue->takeLock);
+    ReentrantLock *takeLock = queue->takeLock;
+    Condition *nonEmpty = queue->nonEmpty;
+    size_t capacity = queue->capacity;
+    lockReentrantLock(takeLock);
 
     while (atomic_load(&queue->count) == 0) {
-        if (!waitCondition(queue->nonEmpty, timeoutMs)) {
-            unlockReentrantLock(queue->takeLock);
+        timeoutMs = awaitCondition(nonEmpty, timeoutMs);
+        
+        if (timeoutMs == 0) {
+            unlockReentrantLock(takeLock);
             return false;
         }
     }
 
     int before = dequeue(queue, item);
     if (before > 1) {
-        signalCondition(queue->nonEmpty);
+        signalCondition(nonEmpty);
     }
 
-    unlockReentrantLock(queue->takeLock);
+    unlockReentrantLock(takeLock);
 
-    if (before == queue->capacity) {
+    if (before == capacity) {
         lockReentrantLock(queue->putLock);
         signalCondition(queue->nonFull);
         unlockReentrantLock(queue->putLock);
@@ -198,23 +199,26 @@ static bool queuePoll(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
 }
 
 static bool queueOffer(LinkedBlockingQueue *queue, void *item, long timeoutMs) {
-    lockReentrantLock(queue->putLock);
+    ReentrantLock* putLock = queue->putLock;
+    Condition* nonFull = queue->nonFull;
+    size_t capacity = queue->capacity;
+    lockReentrantLock(putLock);
 
-    while (atomic_load(&queue->count) == queue->capacity) {
-        if (!waitCondition(queue->nonFull, timeoutMs)) {
-            unlockReentrantLock(queue->putLock);
+    while (atomic_load(&queue->count) == capacity) {
+        timeoutMs = awaitCondition(nonFull, timeoutMs);
+        
+        if (timeoutMs == 0) {
+            unlockReentrantLock(putLock);
             return false;
         }
     }
-
-
-    int before = enqueue(queue, item);
     
-    if (before + 1 < queue->capacity) {
-        signalCondition(queue->nonFull);
+    int before = enqueue(queue, item);
+    if (before + 1 < capacity) {
+        signalCondition(nonFull);
     }
 
-    unlockReentrantLock(queue->putLock);
+    unlockReentrantLock(putLock);
 
     if (before == 0) {
         lockReentrantLock(queue->takeLock);

@@ -3,6 +3,8 @@
 
 #ifdef __cplusplus
 extern "C" {
+#else
+#include <stdbool.h>
 #endif
 
 #include <pthread.h>
@@ -41,6 +43,13 @@ void unlockReentrantLock(ReentrantLock *lock);
  */
 pthread_mutex_t *nativeHandleReentrantLock(ReentrantLock *lock);
 
+/**
+ * Try to lock the reentrant lock. (nonblocking)
+ * 
+ * @param lock the reentrant lock. 
+ * @return return true if lock success.
+ */
+bool tryLockReentrantLock(ReentrantLock* lock);
 #ifdef __cplusplus
 }
 #endif
