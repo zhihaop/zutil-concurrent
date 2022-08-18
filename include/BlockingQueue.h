@@ -26,7 +26,8 @@ typedef struct BlockingQueue {
      * Poll an item from the blocking queue. If the queue is empty, the function will be blocked until the queue is not empty or reaches its timeout.
      * 
      * @param queue         the blocking queue to poll from.
-     * @param timeoutMs     the timeout represented in milliseconds.
+     * @param timeoutMs     the timeout represented in milliseconds. The timeoutMs == -1 means waiting
+     *                      forever. The timeoutMs == 0 means never wait.
      * @param item          the writer buffer.
      * @return              return false if failed.
      */
