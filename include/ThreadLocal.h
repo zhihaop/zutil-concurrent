@@ -11,13 +11,15 @@ extern "C" {
 #endif
 
 #include <pthread.h>
+#include <string.h>
 
 typedef struct {
+    pthread_mutex_t mutex;
     pthread_key_t key;
     bool initialized;
 } ThreadLocal;
-
-#define THREAD_LOCAL_INITIALIZER  {.key = -1, .initialized = false};
+    
+#define THREAD_LOCAL_INITIALIZER  {.mutex = PTHREAD_MUTEX_INITIALIZER, .key = -1, .initialized = false}
     
 /**
 * Init the thread local variable. It is same as marco THREAD_LOCAL_INITIALIZER.
@@ -25,8 +27,8 @@ typedef struct {
 * @param threadLocal   the thread local variable.
 */
 inline static void initThreadLocal(ThreadLocal *threadLocal) {
-    threadLocal->key = -1;
-    threadLocal->initialized = false;
+    ThreadLocal local = THREAD_LOCAL_INITIALIZER;
+    memcpy(threadLocal, &local, sizeof(ThreadLocal));
 }
 
 /**

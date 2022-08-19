@@ -12,12 +12,13 @@ void arrayBlockingQueueExample();
 void linkedBlockingQueueExample();
 void benchmarkArrayBlockingQueue();
 void benchmarkLinkedBlockingQueue();
+
 void blockingQueueExample(BlockingQueue *queue, int queueSize);
 
 int main() {
-//    executorExample(); 
-//    arrayBlockingQueueExample();
-//    linkedBlockingQueueExample();
+    executorExample();
+    arrayBlockingQueueExample();
+    linkedBlockingQueueExample();
     benchmarkArrayBlockingQueue();
     benchmarkLinkedBlockingQueue();
 }
@@ -38,7 +39,7 @@ void executorExample() {
     // LinkedBlockingQueue supports unbounded capacity, taskQueueSize == BLOCKING_QUEUE_UNBOUNDED means
     // blocking queue with unbounded size.
     ExecutorService *pool = newFixedThreadPoolExecutor(corePoolSize, taskQueueSize, "test-%d", newLinkedBlockingQueue);
-    
+
     struct timeval tv0;
     gettimeofday(&tv0, NULL);
 
@@ -56,7 +57,7 @@ void executorExample() {
     struct timeval tv1;
     gettimeofday(&tv1, NULL);
 
-    double diff = (tv1.tv_sec - tv0.tv_sec) * 1000.0 + (tv1.tv_usec - tv0.tv_usec) / 1000.0;
+    double diff = (double) (tv1.tv_sec - tv0.tv_sec) * 1000.0 + (double) (tv1.tv_usec - tv0.tv_usec) / 1000.0;
 
     printf("number of finished tasks = %d, elapsed time = %f ms\n", taskFinish, diff);
 

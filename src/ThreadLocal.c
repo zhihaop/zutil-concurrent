@@ -27,19 +27,17 @@ static void freeThreadLocalValue(void *ptr) {
     free(value);
 }
 
-static pthread_mutex_t THREAD_LOCAL_INITIAL_MUTEX = PTHREAD_MUTEX_INITIALIZER;
-
 inline static bool createThreadStorageIfAbsent(ThreadLocal *threadLocal) {
     if (!atomic_load(&threadLocal->initialized)) {
-        pthread_mutex_lock(&THREAD_LOCAL_INITIAL_MUTEX);
+        pthread_mutex_lock(&threadLocal->mutex);
         if (!atomic_load(&threadLocal->initialized)) {
             if (pthread_key_create(&threadLocal->key, freeThreadLocalValue)) {
-                pthread_mutex_unlock(&THREAD_LOCAL_INITIAL_MUTEX);
+                pthread_mutex_unlock(&threadLocal->mutex);
                 return false;
             }
         }
         atomic_store(&threadLocal->initialized, true);
-        pthread_mutex_unlock(&THREAD_LOCAL_INITIAL_MUTEX);
+        pthread_mutex_unlock(&threadLocal->mutex);
     }
     return true;
 }
@@ -56,6 +54,7 @@ inline static struct ThreadLocalValue *computeIfAbsentThreadLocalValue(ThreadLoc
             free(value);
             return NULL;
         }
+        value->key = threadLocal;
     }
     return value;
 }
@@ -104,7 +103,7 @@ computeIfAbsentThreadLocal(ThreadLocal *threadLocal, void *(*builder)(void *), v
     if (!createThreadStorageIfAbsent(threadLocal)) {
         return NULL;
     }
-    
+
     void *item = getThreadLocalFast(threadLocal);
     if (item != NULL) {
         return item;

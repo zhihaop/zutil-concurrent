@@ -7,8 +7,8 @@
 #include <sys/time.h>
 #include <stdio.h>
 
-static const int CONSUMERS = 8;
-static const int PRODUCERS = 8;
+static const int CONSUMERS = 16;
+static const int PRODUCERS = 16;
 static const size_t QUEUE_SIZE = 1024;
 static const int TEST_SIZE = 1000000;
 
