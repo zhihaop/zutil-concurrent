@@ -10,14 +10,24 @@ extern "C" {
 
 #endif
 
-typedef struct ThreadLocal ThreadLocal;
+#include <pthread.h>
 
+typedef struct {
+    pthread_key_t key;
+    bool initialized;
+} ThreadLocal;
+
+#define THREAD_LOCAL_INITIALIZER  {.key = -1, .initialized = false};
+    
 /**
- * Initialize the thread local variable.
- * @param threadLocal the thread local variable.
- * @return return true if success.
- */
-bool initThreadLocal(ThreadLocal *threadLocal);
+* Init the thread local variable. It is same as marco THREAD_LOCAL_INITIALIZER.
+ * 
+* @param threadLocal   the thread local variable.
+*/
+inline static void initThreadLocal(ThreadLocal *threadLocal) {
+    threadLocal->key = -1;
+    threadLocal->initialized = false;
+}
 
 /**
  * Set the thread local variable.
@@ -35,6 +45,25 @@ bool setThreadLocal(ThreadLocal *threadLocal, void *item, void (*deleter)(void *
  * @return            the item (may be NULL).
  */
 void *getThreadLocal(ThreadLocal *threadLocal);
+
+/**
+ * Set the thread local variable if absent.
+ * 
+ * @param threadLocal   the thread local variable.
+ * @param builder       the builder of the variable.
+ * @param deleter       the deleter of the variable.
+ * @param arg           the argument of the builder.
+ * @return              the thread local value (may be NULL if failed).
+ */
+void *
+computeIfAbsentThreadLocal(ThreadLocal *threadLocal, void *(*builder)(void *), void *arg, void (*deleter)(void *));
+
+/**
+ * Destroy the thread local variable and free all the allocated memory.
+ * 
+ * @param threadLocal the thread local variable.
+ */
+void destroyThreadLocal(ThreadLocal *threadLocal);
 
 #ifdef __cplusplus
 }

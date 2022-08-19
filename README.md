@@ -1,6 +1,7 @@
 # zutil-concurrent
 
-A collection of Java style concurrent utils implemented in C. Including BlockingQueue, ThreadPool, CountDownLatch, ThreadLocal, etc.
+A collection of Java style concurrent utils implemented in C. Including BlockingQueue, ThreadPool, CountDownLatch,
+ThreadLocal, etc.
 
 ## Utils
 
@@ -83,23 +84,22 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 | SPSC      | MPSC     | SPMC     | MPMC     |
 |-----------|----------|----------|----------|
-| 11.3 Mops | 3.8 Mops | 3.9 Mops | 5.5 Mops |
+| 14.7 Mops | 4.4 Mops | 4.2 Mops | 9.4 Mops |
 
 #### LinkedBlockingQueue (offer_threads=16, poll_threads=16, hyper-threading)
 
 | SPSC      | MPSC     | SPMC     | MPMC     |
 |-----------|----------|----------|----------|
-| 16.0 Mops | 6.4 Mops | 6.1 Mops | 4.6 Mops |
+| 20.1 Mops | 6.8 Mops | 6.7 Mops | 6.3 Mops |
 
 #### ArrayBlockingQueue (offer_threads=8, poll_threads=8)
 
 | SPSC      | MPSC     | SPMC     | MPMC     |
 |-----------|----------|----------|----------|
-| 10.9 Mops | 5.8 Mops | 6.5 Mops | 5.6 Mops |
+| 14.8 Mops | 6.7 Mops | 7.8 Mops | 9.1 Mops |
 
 #### LinkedBlockingQueue (offer_threads=8, poll_threads=8)
 
 | SPSC      | MPSC     | SPMC      | MPMC     |
 |-----------|----------|-----------|----------|
-| 18.6 Mops | 8.9 Mops | 10.4 Mops | 8.0 Mops |
-
+| 19.3 Mops | 9.9 Mops | 10.2 Mops | 7.9 Mops |

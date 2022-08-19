@@ -1,7 +1,7 @@
 #include "Condition.h"
+#include "ThreadLocal.h"
 
 #include <stdatomic.h>
-#include <alloca.h>
 
 enum ConditionNodeState {
     WAITING,
@@ -12,12 +12,11 @@ enum ConditionNodeState {
 struct ConditionNode {
     struct ConditionNode *next;
     pthread_cond_t condition;
-
-    int count;
     int state;
 };
 
 struct Condition {
+    ThreadLocal conditionNode;
     ReentrantLock *lock;
     struct ConditionNode *waitHead;
     struct ConditionNode *waitTail;
@@ -48,7 +47,6 @@ inline static struct ConditionNode *newConditionNode() {
     struct ConditionNode *node = calloc(1, sizeof(struct ConditionNode));
 
     node->next = NULL;
-    atomic_store(&node->count, 0);
     atomic_store(&node->state, WAITING);
 
     if (pthread_cond_init(&node->condition, NULL)) {
@@ -58,14 +56,6 @@ inline static struct ConditionNode *newConditionNode() {
     return node;
 }
 
-/**
- * Add the reference count of node by 1.
- * 
- * @param node the condition node.
- */
-inline static void retainConditionNode(struct ConditionNode *node) {
-    atomic_fetch_add(&node->count, 1);
-}
 
 /**
  * Remove the condition node form queue.
@@ -83,20 +73,22 @@ inline static void removeFromQueueConditionNode(struct ConditionNode *head, stru
 }
 
 /**
- * Decrease the reference count of node by 1. Once the reference count decrease to zero, the condition node will
- * be destroyed.
+ * Free the condition node.
  * 
  * @param node the condition node.
  */
-inline static void releaseConditionNode(struct ConditionNode *node) {
-    int now = atomic_fetch_sub(&node->count, 1) - 1;
-    if (now == 0) {
-        pthread_cond_destroy(&node->condition);
-        free(node);
-    } else if (now < 0) {
-        fprintf(stderr, "double free node %p, ref_count %d\n", node, atomic_load(&node->count));
-        fflush(stderr);
-    }
+inline static void freeConditionNode(struct ConditionNode *node) {
+    pthread_cond_destroy(&node->condition);
+    free(node);
+}
+
+static void *newConditionNodeTL(void *arg) {
+    arg = newConditionNode();
+    return arg;
+}
+
+static void freeConditionNodeTL(void *arg) {
+    freeConditionNode(arg);
 }
 
 Condition *newCondition(ReentrantLock *lock) {
@@ -105,16 +97,17 @@ Condition *newCondition(ReentrantLock *lock) {
         return NULL;
     }
 
-    condition->lock = lock;
-    condition->waitHead = newConditionNode();
-    condition->waitTail = condition->waitHead;
+    initThreadLocal(&condition->conditionNode);
 
-    if (condition->waitTail == NULL) {
+    void *head = computeIfAbsentThreadLocal(&condition->conditionNode, newConditionNodeTL, 0, freeConditionNodeTL);
+    if (head == NULL) {
         free(condition);
         return NULL;
     }
 
-    retainConditionNode(condition->waitHead);
+    condition->lock = lock;
+    condition->waitHead = head;
+    condition->waitTail = condition->waitHead;
     return condition;
 }
 
@@ -129,7 +122,6 @@ void signalCondition(Condition *condition) {
     struct ConditionNode *firstNode = waitHead->next;
 
     if (firstNode) {
-        retainConditionNode(firstNode);
         waitHead->next = firstNode->next;
         if (firstNode == condition->waitTail) {
             condition->waitTail = waitHead;
@@ -140,20 +132,20 @@ void signalCondition(Condition *condition) {
             firstNode->state = NOTIFIED;
             pthread_cond_signal(&firstNode->condition);
         }
-        releaseConditionNode(firstNode);
     }
 }
 
 long awaitCondition(Condition *condition, long timeoutMs) {
+    struct timespec ts[2];
     struct timespec *current = NULL;
     struct timespec *timeout = NULL;
     if (timeoutMs == 0) {
         return 0;
     }
-    
+
     if (timeoutMs != -1) {
-        current = alloca(sizeof(struct timespec));
-        timeout = alloca(sizeof(struct timespec));
+        current = &ts[0];
+        timeout = &ts[1];
         clock_gettime(CLOCK_REALTIME, current);
 
         timeout->tv_sec = current->tv_sec;
@@ -161,12 +153,13 @@ long awaitCondition(Condition *condition, long timeoutMs) {
         timeAfter(timeout, timeoutMs);
     }
 
-    struct ConditionNode *waitNode = newConditionNode();
-    if (waitNode == NULL) {
+    void *node = computeIfAbsentThreadLocal(&condition->conditionNode, newConditionNodeTL, 0, freeConditionNodeTL);
+    if (node == NULL) {
         return 0;
     }
-    
-    retainConditionNode(waitNode);
+
+    struct ConditionNode *waitNode = node;
+    waitNode->state = WAITING;
 
     struct ConditionNode *prevNode = condition->waitTail;
     condition->waitTail = waitNode;
@@ -189,37 +182,25 @@ long awaitCondition(Condition *condition, long timeoutMs) {
         }
     }
 
+    waitNode->next = NULL;
     waitNode->state = INVALID;
-    releaseConditionNode(waitNode);
 
     if (timeoutMs == -1) {
         return -1;
-    } 
-    
+    }
+
     struct timespec latest;
     clock_gettime(CLOCK_REALTIME, &latest);
 
-    long duration = (latest.tv_sec - current->tv_sec) * 1000;
+    long duration = (long) (latest.tv_sec - current->tv_sec) * 1000;
     duration += (latest.tv_nsec - current->tv_nsec) / 1000000;
-    
+
     long leave = timeoutMs - duration;
     return leave < 0 ? 0 : leave;
 }
 
 void freeCondition(Condition *condition) {
-    if (condition->lock) {
-        lockReentrantLock(condition->lock);
-    }
-
-    struct ConditionNode *node = condition->waitHead;
-    while (node) {
-        struct ConditionNode *next = node->next;
-        releaseConditionNode(node);
-        node = next;
-    }
-    if (condition->lock) {
-        unlockReentrantLock(condition->lock);
-    }
+    destroyThreadLocal(&condition->conditionNode);
     free(condition);
 }
 

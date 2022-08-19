@@ -3,27 +3,42 @@
 #include <malloc.h>
 #include <pthread.h>
 #include <stdlib.h>
-
-#define REENTRANT_TRY_LOCK_SPIN 16
+#include <stdio.h>
 
 struct ReentrantLock {
     pthread_mutexattr_t attr;
     pthread_mutex_t mutex;
 };
 
+/**
+* Get the time after `afterMs` ms.
+* @param t          the address of struct timespec.
+* @param afterMs    the time represented in milliseconds.
+* @return           
+*/
+inline static void timeAfter(struct timespec *t, long afterMs) {
+    // avoid long overflow
+    t->tv_sec += afterMs / 1000;
+    afterMs = afterMs % 1000;
+
+    t->tv_nsec += afterMs * 1000000;
+    t->tv_sec += t->tv_nsec / 1000000000;
+    t->tv_nsec = t->tv_nsec % 1000000000;
+}
+
 ReentrantLock *newReentrantLock() {
     pthread_mutexattr_t attr;
     if (pthread_mutexattr_init(&attr)) {
         return NULL;
     }
-    
+
     ReentrantLock *lock = calloc(1, sizeof(ReentrantLock));
     if (lock == NULL) {
         return NULL;
     }
 
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    
+
     if (pthread_mutex_init(&lock->mutex, &attr)) {
         free(lock);
         pthread_mutexattr_destroy(&attr);
@@ -44,11 +59,6 @@ void unlockReentrantLock(ReentrantLock *lock) {
 }
 
 void lockReentrantLock(ReentrantLock *lock) {
-    for (int spin = 0; spin < REENTRANT_TRY_LOCK_SPIN; ++spin) {
-        if (tryLockReentrantLock(lock)) {
-            return;
-        }
-    }
     pthread_mutex_lock(&lock->mutex);
 }
 
